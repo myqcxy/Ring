@@ -22,17 +22,32 @@
 
 #include "main.h"
 
+
 int main( void )
 {
+	
 	uint8_t i, j, k, a, b, b1;
 	uint8_t n,u8;
 	uint8_t bWaitRx;
 	uint8_t* pU8;
-
+	
+	
+	
   CLK_DeInit();       //2M, all peripherals enable
   disableInterrupts();
 	
 	Init_Port();	
+	//while(1) LED_1;
+	
+	/*BRTS_0;
+	USART_DeInit();//重置usart的外围设备
+	Set_Usart(1);//设置usart pc3
+	BT_RES_1;//重置
+		while(1){
+			LED_1;
+			BRTS_0;
+		} */
+		
 	FLASH_DeInit();
 	FLASH_SetProgrammingTime(FLASH_ProgramTime_Standard);
 	Init_Mem();
@@ -51,14 +66,15 @@ int main( void )
 	for(i=0;i<4;i++)
 		m_Param.uResv[i]=0;
 	
-	EXTI_DeInit();
+	EXTI_DeInit();//初始化外部中断
+	//设置外部中断在下降沿和低电平有效
 	EXTI_SetPinSensitivity(EXTI_Pin_5, EXTI_Trigger_Falling_Low);
 	m_bWakeExti=0;
 
-	TIM2_DeInit();
-	CLK_SetTick(1);	//TIM2 for ticktime
-	USART_DeInit();
-	Set_Usart(1);
+	TIM2_DeInit();//初始化tim2寄存器
+	CLK_SetTick(1);	//TIM2 for ticktime 使能tim2 外部中断
+	USART_DeInit();//重置usart的外围设备
+	Set_Usart(1);//设置usart pc3
 	m_Idle=0;
 
 	bWaitRx=0;
@@ -66,18 +82,23 @@ int main( void )
 	m_tWarnGap=m_Param.tWarnGap;
 	m_tDataGap=m_Param.tDataGap;
 	
-	BT_RES_1;
+	BT_RES_1;//重置
 	Delay(1);
 	BT_RES_0;
-	ClearDog();
-	BRTS_1;
+	ClearDog();//m_intr1=0
+	BRTS_1;//sleep 蓝牙
 	bRx=0;	//start recv
+	
 	enableInterrupts();
-
-	while(1)
+//BRTS_0;Set_Usart(1);
+while(1)
 	{
-		Delay(1);
+	
+/*	while (USART_GetFlagStatus(USART_FLAG_TXE) == RESET){};
+				USART_SendData8('a');*/
+				
 
+		Delay(1);
 		if(m_Press==02)		//long Press
 		{
 			m_tLLasting=1;
@@ -136,14 +157,15 @@ int main( void )
 			}
 		}
 		
-		u8=RecvData(500);
+		u8=RecvData(500);//=0 no data
 		if(u8>0)
 		{
-			if(u8==255)
+			if(u8==255)//error
 				Clear_Usart_Rx();	
 			else
 			{
-				//recv deal
+				//recv deal 
+				//Usart_ReceiveData8();
 			}
 			
 			bRx=0;	//restart recv
@@ -152,7 +174,7 @@ int main( void )
 		if(!m_tLLasting && !m_tSLasting)
 		{
 			m_Idle++;
-			if(m_bWakeExti)
+			if(m_bWakeExti)//如果处于唤醒状态
 				m_Idle0=4000;		//4s
 			else
 				m_Idle0=500;
@@ -167,7 +189,7 @@ int main( void )
 			}
 		}
 	}
-}
+}//main
 
 
 void Delay(uint16_t nTimes)  //1ms, f=2MHz
@@ -252,11 +274,11 @@ void CLK_SetTick(uint8_t b)  //TIM2 10ms
 {
 	if(b)
 	{
-		CLK_PeripheralClockConfig(CLK_Peripheral_TIM2, ENABLE);
+		CLK_PeripheralClockConfig(CLK_Peripheral_TIM2, ENABLE);//开启tim2的外部时钟
 	  TIM2_TimeBaseInit(TIM2_Prescaler_1, TIM2_CounterMode_Up, 19999);	
-    TIM2_InternalClockConfig();
-		TIM2_ITConfig(TIM2_IT_Update, ENABLE);
-		TIM2_Cmd(ENABLE);
+    TIM2_InternalClockConfig();//开启tim2的内部时钟
+		TIM2_ITConfig(TIM2_IT_Update, ENABLE);//开启tim2内部中断
+		TIM2_Cmd(ENABLE);//让tim外围设备有效
   }else{
 		TIM2_Cmd(DISABLE);
     CLK_PeripheralClockConfig(CLK_Peripheral_TIM2, DISABLE);
@@ -268,12 +290,12 @@ void Set_Usart(uint8_t b)
 {
   if(b)
 	{
-		OPEN_UART_TX;
-		CLK_PeripheralClockConfig(CLK_Peripheral_USART, ENABLE);
+		OPEN_UART_TX;//设置pc3为uart
+		CLK_PeripheralClockConfig(CLK_Peripheral_USART, ENABLE);//使能外设时钟
 		USART_Init((uint32_t)9600, USART_WordLength_8D, USART_StopBits_1,
                 USART_Parity_No, USART_Mode_Rx | USART_Mode_Tx);//115200 past
 								
-    USART_ITConfig(USART_IT_RXNE, ENABLE);
+    USART_ITConfig(USART_IT_RXNE, ENABLE);//使能接收中断
     //Usart_ITConfig(Usart_IT_TXE, ENABLE);
     USART_Cmd(ENABLE);
 	}else{
@@ -341,9 +363,9 @@ void MakeSendPack(uint8_t cmd, uint8_t nNo)
 	uint16_t u16;
 	
 	OPEN_UART_TX;
-	BRTS_0;
+	BRTS_0;//打开蓝牙
 	Delay(1);
-	
+	//设置发送信息
 	Usart_TxBuff[0]=0xEB;
 	Usart_TxBuff[1]=0x90;
 	Usart_TxBuff[2]=0xEB;
@@ -467,7 +489,7 @@ void EnterAHalt(uint8_t time)
 //	CLK_PeripheralClockConfig(CLK_Peripheral_I2C, DISABLE);
 
 	BT_RES_0;
-	BRTS_1;
+	BRTS_1;//sleep
 	LED_0;
 	GPIO_Init(GPIOC, GPIO_Pin_All, GPIO_Mode_Out_OD_HiZ_Slow);    
 	
@@ -488,7 +510,8 @@ void JustExitAHalt(void)
 	
 	Init_Port();	
 
-	EXTI_DeInit();
+	EXTI_DeInit();//初始化外部中断
+	
 	EXTI_SetPinSensitivity(EXTI_Pin_5, EXTI_Trigger_Falling);
 
 	TIM2_DeInit();
@@ -693,12 +716,17 @@ void Clear_I2c_Rx()
 }
 
 
+//读取蓝牙的数据
 @far @interrupt void UsartRx_Handle_ISR(void)
 {
 	uint8_t w;
 	
 	w=(uint8_t)USART->DR;
 	//w=Usart_ReceiveData8();
+
+	while (USART_GetFlagStatus(USART_FLAG_TXE) == RESET){};
+				USART_SendData8('a');
+
 	if(!bRx)
 	{
 		if(!bRxFirst)
@@ -724,7 +752,7 @@ void Clear_I2c_Rx()
 }
 
 //-----------------------------------------
-@far @interrupt void EXTI5_Handle_ISR(void)
+@far @interrupt void EXTI5_Handle_ISR(void)//按下按钮触发
 {
 	EXTI_ClearITPendingBit(EXTI_IT_Pin5);
 	m_bWakeExti=1;

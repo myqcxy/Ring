@@ -104,7 +104,7 @@ uint8_t m_WarnSeq;
 uint8_t m_tLedLasting;
 uint8_t m_Press;		//1--short press, 2--Long press
 
-uint16_t m_Idle,m_Idle0;
+uint16_t m_Idle,m_Idle0;//¿¡∫∫£¨–›√ﬂ
 uint8_t m_bWakeExti;
 //--communication command & ack------
 #define SET_PARAM					0x01
