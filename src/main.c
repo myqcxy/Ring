@@ -42,10 +42,10 @@ int main( void )
 	/*BRTS_0;
 	USART_DeInit();//重置usart的外围设备
 	Set_Usart(1);//设置usart pc3
-	BT_RES_1;//重置
-		while(1){
+	BT_RES_1;//重置*/
+	/*	while(1){
 			LED_1;
-			BRTS_0;
+			//BRTS_0;
 		} */
 		
 	FLASH_DeInit();
@@ -724,8 +724,8 @@ void Clear_I2c_Rx()
 	w=(uint8_t)USART->DR;
 	//w=Usart_ReceiveData8();
 
-	while (USART_GetFlagStatus(USART_FLAG_TXE) == RESET){};
-				USART_SendData8('a');
+	/*while (USART_GetFlagStatus(USART_FLAG_TXE) == RESET){};
+				USART_SendData8('a');*/
 
 	if(!bRx)
 	{
